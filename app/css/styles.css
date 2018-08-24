@@ -1,3 +1,15 @@
+/* ConfigurationSection */
+.advancedOptionsContainer {
+    opacity: 1;
+    transition: opacity 1s;
+}
+
+.advancedOptionsContainer--hidden {
+    opacity: 0;
+    width: 0px;
+    height: 0px;
+}
+
 /* ConfigurationRadioGrp / ConfigurationRadioBtn */
 .ipfsunchecked {
     background-image: url("./img/ipfs-logo.png");
@@ -40,16 +52,4 @@
     width: 150px;
     height: 150px;
     margin: 20px 20px 20px;
-}
-
-/* ConfigurationSection */
-.advancedOptionsContainer {
-    opacity: 1;
-    transition: opacity 1s;
-}
-
-.advancedOptionsContainer--hidden {
-    opacity: 0;
-    width: 0px;
-    height: 0px;
 }
