@@ -6,9 +6,8 @@ import { AragonApp, AppBar, Table, TableHeader, TableRow, IconSettings } from '@
 
 import { AppLayout } from './components/app-layout'
 import { EditPanel } from './components/edit-panel'
-import { FileInput, FileRow } from '@espresso-org/drive-components'
+import { FileInput, FileRow, ConfigurationModal } from '@espresso-org/drive-components'
 import { SideBar } from './components/side-bar'
-import { ConfigurationModal } from './components/configuration-modal'
 
 import './css/styles.css'
 
