@@ -1,0 +1,36 @@
+{
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "modules": false,
+        "targets": {
+          "browsers": [
+          ]
+        },
+        "useBuiltIns": false
+      }
+    ],
+    "@babel/react"
+  ],
+  "plugins": [
+    [
+      "@babel/plugin-proposal-decorators", 
+      { 
+        "legacy": true 
+      }
+    ],
+    [
+      "@babel/plugin-proposal-class-properties",
+      {
+        "loose": true
+      }
+    ],
+    [
+      "styled-components",
+      {
+        "displayName": true
+      }
+    ]
+  ]
+}

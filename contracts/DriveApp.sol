@@ -1,10 +1,9 @@
 pragma solidity ^0.4.24;
 
 import "@aragon/os/contracts/apps/AragonApp.sol";
-import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/acl/ACL.sol";
 import "@aragon/os/contracts/acl/ACLSyntaxSugar.sol";
-import "../apps/datastore-acl/contracts/DatastoreACL.sol";
+import "@espresso-org/object-acl/contracts/ObjectACL.sol";
 import "./libraries/PermissionLibrary.sol";
 import "./libraries/GroupLibrary.sol";
 import "./libraries/FileLibrary.sol";
@@ -17,16 +16,14 @@ import "./libraries/FileLibrary.sol";
 //import "@espresso-org/aragon-datastore/contracts/Datastore.sol"
 
 contract Datastore is AragonApp {
-    
     using PermissionLibrary for PermissionLibrary.PermissionData;
     using FileLibrary for FileLibrary.FileList;
     using GroupLibrary for GroupLibrary.GroupData;
 
     bytes32 constant public DATASTORE_MANAGER_ROLE = keccak256("DATASTORE_MANAGER_ROLE");
-    bytes32 constant public FILE_OWNER_ROLE = keccak256("FILE_OWNER_ROLE");
     bytes32 constant public FILE_READ_ROLE = keccak256("FILE_READ_ROLE");
     bytes32 constant public FILE_WRITE_ROLE = keccak256("FILE_WRITE_ROLE");
-
+    bytes32 constant public DATASTORE_GROUP = keccak256("DATASTORE_GROUP");
 
     event FileRename(address indexed entity);
     event FileContentUpdate(address indexed entity);
@@ -37,6 +34,7 @@ contract Datastore is AragonApp {
     event NewGroupPermissions(address indexed entity);
     event NewPermissions(address indexed entity);
     event DeleteFile(address indexed entity);
+    event DeleteFilePermanently(address indexed entity);
     event SettingsChanged(address indexed entity);
     event GroupChange(address indexed entity);
     event EntityPermissionsRemoved(address indexed entity);
@@ -46,15 +44,18 @@ contract Datastore is AragonApp {
      * Datastore settings
      */
     enum StorageProvider { None, Ipfs, Filecoin, Swarm }
-    enum EncryptionType { None, Aes }
+    enum EncryptionProvider { None, Aes }
 
     struct Settings {
         StorageProvider storageProvider;
-        EncryptionType encryption;
+        EncryptionProvider encryptionProvider;
 
         string ipfsHost;
         uint16 ipfsPort;
         string ipfsProtocol;
+
+        string aesName;
+        uint aesLength;
     }
 
     /** 
@@ -63,32 +64,33 @@ contract Datastore is AragonApp {
     struct IpfsSettings {
         string host;
         uint16 port;
-        string protocol;        
+        string protocol;       
     }
     
+    /** 
+     *  TODO: Use AesSettings inside Settings when aragon supports nested structs
+     */
+    struct AesSettings {
+        string name;
+        uint length;
+    }
+        
     FileLibrary.FileList private fileList;
-
-
     PermissionLibrary.PermissionData private permissions;
     GroupLibrary.GroupData private groups;
     Settings public settings;
-
-    DatastoreACL private datastoreACL;
-
+    ObjectACL private objectACL;
 
     modifier onlyFileOwner(uint256 _fileId) {
         require(permissions.isOwner(_fileId, msg.sender));
         _;
     }    
 
-    function init(address _datastoreACL) onlyInit public
-    {
+    function initialize(address _objectACL) onlyInit public {
         initialized();
-
-        datastoreACL = DatastoreACL(_datastoreACL);
-        
-        permissions.init(datastoreACL);
-        groups.init(datastoreACL);
+        objectACL = ObjectACL(_objectACL);
+        permissions.initialize(objectACL, FILE_READ_ROLE, FILE_WRITE_ROLE);
+        groups.initialize(objectACL, DATASTORE_GROUP);
     }      
     
     /**
@@ -97,13 +99,14 @@ contract Datastore is AragonApp {
      * @param _name File name
      * @param _fileSize File size in bytes
      * @param _isPublic Is file readable by anyone
+     * @param _encryptionKey File encryption key
      */
-    function addFile(string _storageRef, string _name, uint _fileSize, bool _isPublic) 
+    function addFile(string _storageRef, string _name, uint128 _fileSize, bool _isPublic, string _encryptionKey) 
         external 
         auth(DATASTORE_MANAGER_ROLE) 
         returns (uint fileId) 
     {
-        uint fId = fileList.addFile(_storageRef, _name, _fileSize, _isPublic);
+        uint fId = fileList.addFile(_storageRef, _name, _fileSize, _isPublic, _encryptionKey);
 
         permissions.addOwner(fId, msg.sender);
         emit NewFile(msg.sender);
@@ -121,15 +124,15 @@ contract Datastore is AragonApp {
         returns (
             string storageRef,
             string name,
-            uint fileSize,
+            uint128 fileSize,
             bool isPublic,
             bool isDeleted,
             address owner,
             bool isOwner,
-            uint lastModification,
+            uint64 lastModification,
             address[] permissionAddresses,
             bool writeAccess
-        ) 
+        )
     {
         FileLibrary.File storage file = fileList.files[_fileId];
 
@@ -145,16 +148,48 @@ contract Datastore is AragonApp {
         writeAccess = hasWriteAccess(_fileId, _caller);
     }
 
-
+    /**
+     * @notice Returns the encryption key for file with `_fileId`
+     * @param _fileId File Id 
+     */
+    function getFileEncryptionKey(uint _fileId) external view returns(string) {
+        if (hasReadAccess(_fileId, msg.sender)) {
+            FileLibrary.File storage file = fileList.files[_fileId];
+            return file.cryptoKey;
+        }
+        return "0";
+    } 
 
     /**
-     * @notice Delete file with Id `_fileId`
+     * @notice Set file `_fileId` as deleted or not.
      * @param _fileId File Id
+     * @param _isDeleted Is file deleted or not
+     * @param _deletePermanently If true, will delete file permanently
      */
-    function deleteFile(uint _fileId) public onlyFileOwner(_fileId) {
-        fileList.deleteFile(_fileId);
+    function deleteFile(uint _fileId, bool _isDeleted, bool _deletePermanently) public onlyFileOwner(_fileId) {
+        if (_isDeleted && _deletePermanently) {
+            fileList.permanentlyDeleteFile(_fileId);
+            emit DeleteFilePermanently(msg.sender);            
+        }
+        else {
+            fileList.setIsDeleted(_fileId, _isDeleted);
+            emit DeleteFile(msg.sender);
+        }
     }
 
+    /**
+     * @notice Delete files in `_fileIds`. Files cannot be restored
+     * @param _fileIds File Ids
+     */
+    function deleteFilesPermanently(uint256[] _fileIds) public {
+        for(uint256 i = 0; i < _fileIds.length; i++)
+            fileList.permanentlyDeleteFile(_fileIds[i]);
+        emit DeleteFilePermanently(msg.sender);
+    }      
+
+    /**
+     * @notice Returns the last file Id
+     */
     function lastFileId() external view returns (uint256) {
         return fileList.lastFileId;
     }
@@ -171,13 +206,25 @@ contract Datastore is AragonApp {
     }
 
     /**
+     * @notice Changes encryption key of file `_fileId` to `_cryptoKey`
+     * @param _fileId File Id
+     * @param _cryptoKey Encryption key    
+     */
+    function setEncryptionKey(uint _fileId, string _cryptoKey) public {
+        require(hasWriteAccess(_fileId, msg.sender));
+
+        fileList.setEncryptionKey(_fileId, _cryptoKey);
+        emit FileContentUpdate(msg.sender);
+    }    
+
+    /**
      * @notice Change file content of file `_fileId` to content stored at `_storageRef`
      * with size of `_fileSize` bytes
      * @param _fileId File Id
      * @param _storageRef Storage Id (IPFS)
      * @param _fileSize File size in bytes
      */
-    function setFileContent(uint _fileId, string _storageRef, uint _fileSize) external {
+    function setFileContent(uint _fileId, string _storageRef, uint128 _fileSize) external {
         require(hasWriteAccess(_fileId, msg.sender));
 
         fileList.setFileContent(_fileId, _storageRef, _fileSize);
@@ -241,7 +288,6 @@ contract Datastore is AragonApp {
         read = permission.read;
     } 
 
-
     /**
      * @notice Add/Remove permissions to an entity for a specific file
      * @param _fileId File Id
@@ -278,24 +324,39 @@ contract Datastore is AragonApp {
     }
 
     /**
-     * Sets IPFS as the storage provider for the datastore.
-     * Since switching between storage providers is not supported,
-     * the method can only be called if storage isn't set or already IPFS
+     * @notice Change the encryption provider
+     * @param _encryptionProvider Encryption provider
      */
-    function setIpfsStorageSettings(string host, uint16 port, string protocol) public {
+    function setEncryptionProvider(EncryptionProvider _encryptionProvider) public {
+        require(settings.encryptionProvider == EncryptionProvider.None);
+        settings.encryptionProvider = _encryptionProvider;
+        emit SettingsChanged(msg.sender);
+    }
+
+    /**
+     * @notice Sets IPFS as the storage provider for the datastore.
+     * Since switching between storage providers is not supported,
+     * the method can only be called if storage isn't set or already IPFS.
+     * Also sets AES as the encryption provider.
+     * @param _host Host
+     * @param _port Port
+     * @param _protocol HTTP protocol
+     * @param _name Name of the AES encryption algorithm
+     * @param _length Length of the encryption key
+     */
+    function setSettings(string _host, uint16 _port, string _protocol, string _name, uint _length) public {
         require(settings.storageProvider == StorageProvider.None || settings.storageProvider == StorageProvider.Ipfs);
+        require(settings.encryptionProvider == EncryptionProvider.None || settings.encryptionProvider == EncryptionProvider.Aes);
 
-        settings.ipfsHost = host;
-        settings.ipfsPort = port;
-        settings.ipfsProtocol = protocol;
-        /*
-        settings.ipfs = IpfsSettings({
-            host: host,
-            port: port,
-            protocol: protocol
-        });*/
-
+        settings.ipfsHost = _host;
+        settings.ipfsPort = _port;
+        settings.ipfsProtocol = _protocol;
         settings.storageProvider = StorageProvider.Ipfs;
+
+        settings.aesName = _name;
+        settings.aesLength = _length;
+        settings.encryptionProvider = EncryptionProvider.Aes;
+
         emit SettingsChanged(msg.sender);
     }
 
@@ -345,10 +406,9 @@ contract Datastore is AragonApp {
      * @notice Add a group to the datastore
      * @param _groupName Name of the group
      */
-    function createGroup(string _groupName) external auth(DATASTORE_MANAGER_ROLE) returns (uint) {
-        uint id = groups.createGroup(_groupName);
+    function createGroup(string _groupName) external {
+        groups.createGroup(_groupName);
         emit GroupChange(msg.sender);
-        return id;
     }
 
     /**
@@ -384,10 +444,9 @@ contract Datastore is AragonApp {
     /**
      * @notice Get a list of all the groups Id's
      */
-    function getGroupIds() public view returns (uint[]){
+    function getGroupIds() public view returns (uint[]) {
         return groups.groupList;
     }
-
 
     /**
      * @notice Add an entity to a group
@@ -431,19 +490,33 @@ contract Datastore is AragonApp {
      * @param _groupWrite Write permission
      * @param _entities Ids of the groups
      * @param _entityRead Read permission
-     * @param _entityWrite Write permission      
+     * @param _entityWrite Write permission
+     * @param _isPublic Public status
+     * @param _storageRef Storage reference
+     * @param _fileSize File size
+     * @param _encryptionKey Encryption key
      */
-    function setMultiplePermissions(uint256 _fileId, uint256[] _groupIds, bool[] _groupRead, bool[] _groupWrite, address[] _entities, bool[] _entityRead, bool[] _entityWrite, bool _isPublic) public onlyFileOwner(_fileId) {
-        
+    function setMultiplePermissions(
+        uint256 _fileId, uint256[] _groupIds, bool[] _groupRead, bool[] _groupWrite, 
+        address[] _entities, bool[] _entityRead, bool[] _entityWrite, bool _isPublic, string _storageRef, 
+        uint128 _fileSize, string _encryptionKey) 
+        public 
+        onlyFileOwner(_fileId) 
+    {
         for(uint256 i = 0; i < _groupIds.length; i++) 
             permissions.setGroupPermissions(_fileId, _groupIds[i], _groupRead[i], _groupWrite[i]);
         
         for(uint256 j = 0; j < _entities.length; j++) 
             permissions.setEntityPermissions(_fileId, _entities[j], _entityRead[j], _entityWrite[j]);
 
-        fileList.files[_fileId].isPublic = _isPublic;
+        fileList.setPublic(_fileId, _isPublic);
+
+        if (!_isPublic || (_isPublic && keccak256(_encryptionKey) == keccak256(""))) {
+            fileList.setFileContent(_fileId, _storageRef, _fileSize);
+            fileList.setEncryptionKey(_fileId, _encryptionKey);
+        }
         emit NewPermissions(msg.sender);
-    }    
+    }
 
     /**
      * @notice Remove group from file permissions
@@ -457,16 +530,15 @@ contract Datastore is AragonApp {
 }
 
 contract DriveApp is Datastore {
-
     function initialize() external {
-        //super.init();
-        
-        settings = Settings({
+        /*settings = Settings({
             storageProvider: StorageProvider.Ipfs,
-            encryption: EncryptionType.Aes,
+            encryptionProvider: EncryptionProvider.Aes,
             ipfsHost: "localhost",
             ipfsPort: 5001,
-            ipfsProtocol: "http"
-        });
+            ipfsProtocol: "http",
+            aesName: "AES-CBC",
+            aesLength: 256
+        });*/
     }
 }

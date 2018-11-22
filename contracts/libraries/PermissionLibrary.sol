@@ -1,9 +1,8 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
-import "../../apps/datastore-acl/contracts/DatastoreACL.sol";
+import "@espresso-org/object-acl/contracts/ObjectACL.sol";
 
 library PermissionLibrary {
-
     /**
      * Read and write permission for an entity on a specific file
      */
@@ -25,16 +24,13 @@ library PermissionLibrary {
         bytes32 FILE_READ_ROLE;
         bytes32 FILE_WRITE_ROLE;  
 
-        DatastoreACL acl;      
+        ObjectACL acl;      
     }
 
-    // ************* PermissionData ************* //
-
-
-    function init(PermissionData storage _self, DatastoreACL _acl) internal {
-        _self.FILE_READ_ROLE = keccak256("FILE_READ_ROLE");
-        _self.FILE_WRITE_ROLE = keccak256("FILE_WRITE_ROLE");
+    function initialize(PermissionData storage _self, ObjectACL _acl, bytes32 _FILE_READ_ROLE, bytes32 _FILE_WRITE_ROLE) internal {
         _self.acl = _acl;
+        _self.FILE_READ_ROLE = _FILE_READ_ROLE;
+        _self.FILE_WRITE_ROLE = _FILE_WRITE_ROLE;
     }
 
     /**
@@ -64,12 +60,8 @@ library PermissionLibrary {
      * @param _fileId File Id
      */
     function getOwner(PermissionData storage _self, uint _fileId) internal view returns (address) {
-        return _self.acl.getObjectPermissionManager(_fileId, _self.FILE_READ_ROLE);
+        return _self.acl.getObjectPermissionManager(_fileId, _self.FILE_WRITE_ROLE);
     }
-
-
-
-    // ************* PermissionData ************* //
 
     function getEntityPermissionsOnFile(PermissionData storage _self, uint256 _fileId, address _entity) 
         internal 
@@ -128,13 +120,15 @@ library PermissionLibrary {
         _self.entityPermissions[_fileId][_entity].read = _read;
         _self.entityPermissions[_fileId][_entity].write = _write;
 
-        if (_read) 
+        if (_read) {
+            _self.acl.createObjectPermission(_entity, _fileId, _self.FILE_READ_ROLE, msg.sender);
             _self.acl.grantObjectPermission(_entity, _fileId, _self.FILE_READ_ROLE, msg.sender);        
+        }
 
-        if (_write) 
+        if (_write) {
+            _self.acl.createObjectPermission(_entity, _fileId, _self.FILE_WRITE_ROLE, msg.sender);
             _self.acl.grantObjectPermission(_entity, _fileId, _self.FILE_WRITE_ROLE, msg.sender);
-        
-
+        }
         //NewWritePermission(msg.sender, _fileId);
     }   
 
