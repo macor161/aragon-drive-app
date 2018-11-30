@@ -2,16 +2,7 @@ import { observable, observe, action } from 'mobx'
 
 
 export class LabelStore {
-    @observable availableLabels = [{
-      id: 1,
-      name: 'label 1',
-      color: '333333'
-    },
-    {
-      id: 2,
-      name: 'label 2',
-      color: '2354AA'
-    }]
+    @observable availableLabels = []
 
     @observable selectedLabel = null
 
@@ -53,10 +44,13 @@ export class LabelStore {
 
     async initialize() {
       return new Promise(async (res) => {
-        (await this._datastore.events()).subscribe((event) => {
+        (await this._datastore.events()).subscribe(async (event) => {
           switch (event.event) {
             case 'LabelChange':
-              this._refreshAvailableLabels()
+              await this._refreshAvailableLabels()
+              // If selected label is no more in the label list, unselect it
+              if (this.selectedLabel && !this.availableLabels.some(label => label.id === this.selectedLabel.id))
+                this.selectedLabel = null
               break
           }
         });
