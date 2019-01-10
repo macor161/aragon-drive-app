@@ -43,10 +43,10 @@ inject("mainStore", "configStore")(
                     placeholder="Search Files"
                   />
                 </span>
-                <span style={{ cursor: 'pointer' }} onClick={() => mainStore.isDeletedFilesScreenOpen = true}><TrashIco2 /> </span>
-                <span style={{ cursor: 'pointer' }} onClick={() => mainStore.isLabelScreenOpen = true}><LabelIcon2 /> </span>
-                <span style={{ cursor: 'pointer' }} onClick={() => mainStore.isGroupsSectionOpen = true}><GroupsSectionBtn /></span>
-                <span style={{ cursor: 'pointer' }} onClick={() => configStore.isConfigSectionOpen = true}><ConfigurationSectionBtn /></span>
+                <span style={{ cursor: 'pointer' }} onClick={() => mainStore.isDeletedFilesScreenOpen = true}><TrashIco2 title="Deleted files" /> </span>
+                <span style={{ cursor: 'pointer' }} onClick={() => mainStore.isLabelScreenOpen = true}><LabelIcon2 title="Labels" /> </span>
+                <span style={{ cursor: 'pointer' }} onClick={() => mainStore.isGroupsSectionOpen = true}><GroupsSectionBtn title="Groups" /></span>
+                <span style={{ cursor: 'pointer' }} onClick={() => configStore.isConfigSectionOpen = true}><ConfigurationSectionBtn title="Settings" /></span>
                 <MainDropDown mainStore={mainStore} />
               </div>
             }
@@ -143,7 +143,7 @@ const TrashIco = styled(FontAwesomeIcon)`
 
 const TrashIco2 = styled.img.attrs({ src: trashSvg })`
   width: auto !important;
-  
+  height: 22px;
   fill-opacity: 0.8;
   vertical-align: middle;
   margin: 0 14px;
@@ -200,6 +200,7 @@ const LabelIcon2 = styled.img.attrs({ src: labelSvg })`
   display: inline-block;
   vertical-align: middle;
   margin-right: 10px;
+  height: 20px;
 `
 
 const SearchInput = styled.input`

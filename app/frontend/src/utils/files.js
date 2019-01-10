@@ -94,8 +94,8 @@ export function getDescriptionForFile(file) {
 export function getIconForFile(file) {
   console.log('loading ', getClassNameForFile(file))
   return file.isFolder
-    ? <FontAwesomeIcon style={{ height: '20px', marginLeft: '-2px', verticalAlign: 'middle', marginBottom: '3px' }} icon={regular.faFolder} />
-    : <FontAwesomeIcon style={{ height: '17px' }} icon={regular[getClassNameForFile(file)]} />
+    ? <FontAwesomeIcon style={{ height: '24px', marginLeft: '-2px', verticalAlign: 'middle', marginBottom: '5px' }} icon={regular.faFolder} />
+    : <FontAwesomeIcon style={{ height: '22px', marginBottom: '-2px' }} icon={regular[getClassNameForFile(file)]} />
 }
 
 export function loadFileIcons() {
