@@ -1,11 +1,21 @@
 import React from 'react'
+import styled from 'styled-components'
 import fontawesome from '@fortawesome/fontawesome'
 // import solid from '@fortawesome/fontawesome-free-solid'
 import * as solid from '@fortawesome/free-regular-svg-icons'
 import * as regular from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import foldersSvg from '../images/folder.svg'
+import foldersSvg2 from '../images/folderv2.svg'
 
 import * as fileDesc from './file-descriptions'
+
+const FoldersIcon = styled.img.attrs({ src: foldersSvg })`
+    width: 18px;
+    vertical-align: middle;
+    margin-left: -4px;
+    margin-right: -2px;
+`
 
 
 export function downloadFile(file, filename) {
@@ -85,8 +95,8 @@ export function getDescriptionForFile(file) {
 export function getIconForFile(file) {
   console.log('loading ', getClassNameForFile(file))
   return file.isFolder
-    ? <div />
-    : <FontAwesomeIcon icon={regular[getClassNameForFile(file)]} />
+    ? <FoldersIcon />
+    : <FontAwesomeIcon style={{ height: '17px' }} icon={regular[getClassNameForFile(file)]} />
 }
 
 export function loadFileIcons() {
