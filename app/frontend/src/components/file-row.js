@@ -114,5 +114,6 @@ const LastModifCell = styled(TableCell)`
   width: 135px;
 `
 const DownloadIco = styled.img.attrs({ src: downloadSvg })`
-  width: 28px;
+  width: 26px;
+  margin-bottom: 6px;
 `
