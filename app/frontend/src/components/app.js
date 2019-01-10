@@ -21,6 +21,8 @@ import { FileList } from './file-list'
 import { AddLabelPanel } from './add-label-panel'
 import { Breadcrumb } from './breadcrumb'
 import { MainDropDown } from './main-drop-down'
+import trashSvg from '../images/trash.svg'
+import labelSvg from '../images/label.svg'
 
 export const App =
 inject("mainStore", "configStore")(
@@ -41,8 +43,8 @@ inject("mainStore", "configStore")(
                     placeholder="Search Files"
                   />
                 </span>
-                <span style={{ cursor: 'pointer' }} onClick={() => mainStore.isDeletedFilesScreenOpen = true}><TrashIco icon={faTrashAlt} /> </span>
-                <span style={{ cursor: 'pointer' }} onClick={() => mainStore.isLabelScreenOpen = true}><LabelIcon /> </span>
+                <span style={{ cursor: 'pointer' }} onClick={() => mainStore.isDeletedFilesScreenOpen = true}><TrashIco2 /> </span>
+                <span style={{ cursor: 'pointer' }} onClick={() => mainStore.isLabelScreenOpen = true}><LabelIcon2 /> </span>
                 <span style={{ cursor: 'pointer' }} onClick={() => mainStore.isGroupsSectionOpen = true}><GroupsSectionBtn /></span>
                 <span style={{ cursor: 'pointer' }} onClick={() => configStore.isConfigSectionOpen = true}><ConfigurationSectionBtn /></span>
                 <MainDropDown mainStore={mainStore} />
@@ -138,6 +140,15 @@ const TrashIco = styled(FontAwesomeIcon)`
   vertical-align: middle;
   margin: 0 14px;
 `
+
+const TrashIco2 = styled.img.attrs({ src: trashSvg })`
+  width: auto !important;
+  
+  fill-opacity: 0.8;
+  vertical-align: middle;
+  margin: 0 14px;
+`
+
 const Main = styled.div`
   width: 100%;
 `
@@ -184,6 +195,13 @@ const LabelIcon = styled.img.attrs({ src: require('../images/labels-icon.png') }
   vertical-align: middle;
   margin-right: 10px;
 `
+
+const LabelIcon2 = styled.img.attrs({ src: labelSvg })`
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 10px;
+`
+
 const SearchInput = styled.input`
   border: 0;
   outline: 0;
