@@ -6,7 +6,6 @@ import * as solid from '@fortawesome/free-regular-svg-icons'
 import * as regular from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import foldersSvg from '../images/folder.svg'
-import foldersSvg2 from '../images/folderv2.svg'
 
 import * as fileDesc from './file-descriptions'
 
@@ -95,7 +94,6 @@ export function getDescriptionForFile(file) {
 export function getIconForFile(file) {
   console.log('loading ', getClassNameForFile(file))
   return file.isFolder
-    // ? <FoldersIcon />
     ? <FontAwesomeIcon style={{ height: '20px', marginLeft: '-2px', verticalAlign: 'middle', marginBottom: '3px' }} icon={regular.faFolder} />
     : <FontAwesomeIcon style={{ height: '17px' }} icon={regular[getClassNameForFile(file)]} />
 }

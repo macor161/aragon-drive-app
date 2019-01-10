@@ -10,13 +10,8 @@ import { getClassNameForFile, getIconForFile } from '../utils/files'
 import { SelectableRow } from './selectable-row'
 import { EthAddress } from './eth-address'
 import { Label } from './label'
-import { loadFileIcons } from '../utils/files'
+import downloadSvg from '../images/download.svg'
 
-// fontawesome.library.add(solid.faDownload)
-// fontawesome.library.add(solid.faFolder)
-// fontawesome.library.add(faFileImage)
-// loadFileIcons()
-const f = 'faFileImage'
 
 export const FileRow = ({ file, onClick, onLabelClick, onDownloadClick, onOpenClick, selected }) =>
   <Container {...{
@@ -55,7 +50,7 @@ export const FileRow = ({ file, onClick, onLabelClick, onDownloadClick, onOpenCl
     </LastModifCell>
     <TableCell onClick={preventDefault(onDownloadClick)}>
       { !file.isFolder ?
-        <DownloadIco className="fa fa-download" />
+        <DownloadIco />
         :
         <span onClick={preventDefault(onOpenClick)} />
       }
@@ -118,7 +113,6 @@ const LastModifCell = styled(TableCell)`
   min-width: 135px;
   width: 135px;
 `
-const DownloadIco = styled.i`
-  /*width: 64px;
-  height: 64px;*/
+const DownloadIco = styled.img.attrs({ src: downloadSvg })`
+  width: 28px;
 `
