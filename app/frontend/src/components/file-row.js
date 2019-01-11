@@ -22,7 +22,6 @@ export const FileRow = ({ file, onClick, onLabelClick, onDownloadClick, onOpenCl
   >
     <NameCell>
       <Name>
-        {/* <FontAwesomeIcon icon={regular[getClassNameForFile(file)]} /> */}
         {getIconForFile(file)}
         {file.isFolder ?
           <FolderName onClick={preventDefault(onOpenClick)}>{file.name}</FolderName>
