@@ -35,7 +35,6 @@ inject("mainStore", "configStore")(
             title="Drive"
             endContent={
               <div>
-
                 <span>
                   <SearchInput
                     value={mainStore.searchQuery}
@@ -124,7 +123,6 @@ inject("mainStore", "configStore")(
         </span>
         )}
       </Screen>
-
 
       <AddLabelPanel
         opened={mainStore.isAddLabelPanelOpen}

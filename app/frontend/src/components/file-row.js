@@ -48,15 +48,14 @@ export const FileRow = ({ file, onClick, onLabelClick, onDownloadClick, onOpenCl
     <LastModifCell>
       {moment(file.lastModification).format('YYYY-MM-DD')}
     </LastModifCell>
-    <TableCell onClick={preventDefault(onDownloadClick)}>
+    <TableCell>
       { !file.isFolder ?
-        <DownloadIco />
+        <DownloadIco onClick={preventDefault(onDownloadClick)}><DownloadImg /></DownloadIco>
         :
         <span onClick={preventDefault(onOpenClick)} />
       }
     </TableCell>
   </Container>
-
 
 /**
  * Returns a function that stops event propagation
@@ -96,7 +95,6 @@ const FolderName = styled.div`
     cursor: pointer;
   }
 `
-
 const NameCell = styled(TableCell)`
   min-width: 180px;
   width: 100%;
@@ -113,7 +111,26 @@ const LastModifCell = styled(TableCell)`
   min-width: 135px;
   width: 135px;
 `
-const DownloadIco = styled.img.attrs({ src: downloadSvg })`
+const DownloadImg = styled.img.attrs({ src: downloadSvg })`
   width: 26px;
   margin-bottom: 6px;
+  margin-left: 8px;
+`
+const DownloadIco = styled.div`
+  width: 31px;
+  height: 31px;
+  cursor: pointer;
+  background-position: center;
+  transition: background 0.8s;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  &:hover {
+    background: #cccccc radial-gradient(circle, transparent 1%, #cccccc 1%) center/15000%;
+  }
+  &:active {
+    background-color: #f2f2f2;
+    background-size: 100%;
+    transition: background 0s;  
+  }
 `
