@@ -112,7 +112,7 @@ const LastModifCell = styled(TableCell)`
 `
 const DownloadImg = styled.img.attrs({ src: downloadSvg })`
   width: 26px;
-  margin-bottom: 6px;
+  margin-bottom: 2px;
   margin-left: 2px;
 `
 const DownloadIco = styled.div`
@@ -123,6 +123,7 @@ const DownloadIco = styled.div`
   transition: background 0.8s;
   border-radius: 50%;
   display: flex;
+  margin-bottom: 2px;
   align-items: center;
   &:hover {
     background: #cccccc radial-gradient(circle, transparent 1%, #cccccc 1%) center/15000%;
